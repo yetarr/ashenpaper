@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use eframe::egui;
+use eframe::egui::{self, Vec2};
 
 use crate::hypr;
 
@@ -13,22 +13,38 @@ impl MyApp {
         MyApp { wallpapers }
     }
 
-    fn render_wallpapers(&mut self, ui: &mut egui::Ui) {
-        for path in &self.wallpapers {
-            let name = path.file_name().unwrap().display().to_string();
-            let btn = ui.button(name);
-
-            if btn.clicked() {
-                if let Err(e) = hypr::set_wallpaper(&path.display().to_string()) {
-                    eprintln!("error setting wallpaper: {:?}", e);
+    fn render_all_wallpapers(&mut self, ui: &mut egui::Ui) {
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            ui.horizontal_wrapped(|ui| {
+                for path in &self.wallpapers {
+                    self.render_wallpaper(path, ui);
                 }
+            });
+        });
+    }
+
+    fn render_wallpaper(&self, path: &PathBuf, ui: &mut egui::Ui) {
+        ui.vertical(|ui| {
+            let path_str = path.display().to_string();
+            ui.add(
+                egui::Image::new(format!("file://{}", path_str))
+                    .fit_to_exact_size(Vec2::new(200.0, 150.0))
+            );
+            let btn = ui.add(
+                egui::Button::new(path.file_name().unwrap().display().to_string())
+                    .min_size(Vec2::new(200.0, 20.0))
+            );
+            if btn.clicked() {
+                if let Err(e) = hypr::set_wallpaper(&path_str) {
+                    eprintln!("error setting wallpaper: {:?}", e);
+                };
             }
-        }
+        });
     }
 }
 
 impl eframe::App for MyApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        self.render_wallpapers(ui);
+        self.render_all_wallpapers(ui);
     }
 }

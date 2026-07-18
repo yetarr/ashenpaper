@@ -1,6 +1,7 @@
 use anyhow::Result;
 use std::path::PathBuf;
 use eframe;
+use eframe::egui;
 
 mod renderer;
 mod hypr;
@@ -20,12 +21,19 @@ fn list_wallpapers(path: &str) -> Result<Vec<PathBuf>> {
 }
 
 fn main() -> Result<()> {
-    let options = eframe::NativeOptions::default();
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([800.0, 600.0]),
+        ..Default::default()
+    };
     let wallpapers = list_wallpapers("/home/yetar/Pictures/Wallpapers")?;
     eframe::run_native(
         "hyprpaper changer",
         options,
-        Box::new(|_cc| Ok(Box::new(renderer::MyApp::new(wallpapers)))),
+        Box::new(|cc| { 
+            egui_extras::install_image_loaders(&cc.egui_ctx);
+            Ok(Box::new(renderer::MyApp::new(wallpapers))) 
+        }),
     )?;
     Ok(())
 }
