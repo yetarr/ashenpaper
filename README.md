@@ -2,7 +2,7 @@
 
 A lightweight GUI wallpaper switcher for [hyprpaper](https://github.com/hyprwm/hyprpaper), built with Rust and `egui`.
 
-> **Status: in development, missing core features** A pplying a wallpaper won't change it permanently, only to the current running hyprpaper daemon, ui design is on a very early stage.
+> **Status: in development, missing core features** Applying a wallpaper won't change it permanently, only to the current running hyprpaper daemon, ui design is on a very early stage.
 
 ## Goal
 
