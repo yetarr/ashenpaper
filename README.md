@@ -2,11 +2,7 @@
 
 A lightweight GUI wallpaper switcher for [hyprpaper](https://github.com/hyprwm/hyprpaper), built with Rust and `egui`.
 
-> **Status: in development, missing core features** Applying a wallpaper won't change it permanently, only to the current running hyprpaper daemon, ui design is on a very early stage.
-
-## Goal
-
-Browse the wallpapers in a folder and apply one across all connected monitors with a click.
+Browse the wallpapers in a folder in a centered, responsive grid, each thumbnail cropped to your monitor's aspect ratio, and apply one across all connected monitors with a click. The choice persists across restarts.
 
 ## Requirements
 
@@ -19,6 +15,14 @@ Browse the wallpapers in a folder and apply one across all connected monitors wi
 cargo build --release
 ```
 
-## How it works (so far)
+## Usage
 
-Ashenpaper reads monitor names via `hyprctl monitors -j` and can apply a wallpaper to every connected monitor using `hyprctl hyprpaper wallpaper`. Wallpapers are read from `~/Pictures/Wallpapers`.
+```bash
+./target/release/ashenpaper
+```
+
+Wallpapers are read from `~/Pictures/Wallpapers` by default.
+
+## How it works
+
+Ashenpaper reads monitor names and resolution via `hyprctl monitors -j`, using the primary monitor's aspect ratio to crop thumbnails so they preview accurately. Clicking a wallpaper applies it to every connected monitor via `hyprctl hyprpaper wallpaper`, and rewrites `hyprpaper.conf` on disk so the choice survives a restart.
