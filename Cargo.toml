@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.103"
+dirs = "6.0.0"
 eframe = { version = "0.35.0", features = ["default"] }
 egui_extras = { version = "0.35.0", features = ["all_loaders"] }
 image = { version = "0.25", features = ["jpeg", "png"] } # Add the types you want support for
