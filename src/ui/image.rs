@@ -1,4 +1,5 @@
-use std::{ffi::OsStr, path::PathBuf};
+use std::ffi::OsStr;
+use std::path::PathBuf;
 
 use eframe::egui::{self, TextureHandle};
 
@@ -12,7 +13,11 @@ pub struct Image {
 
 impl Image {
     pub fn new(path: PathBuf, thumb: TextureHandle) -> Self {
-        let name = path.file_name().unwrap_or(OsStr::new("unnamed")).display().to_string();
+        let name = path
+            .file_name()
+            .unwrap_or(OsStr::new("unnamed"))
+            .display()
+            .to_string();
         Image { path, name, thumb }
     }
 
@@ -36,5 +41,8 @@ impl Image {
 }
 
 pub fn compute_images(paths: &[PathBuf], placeholder: &TextureHandle) -> Vec<Image> {
-    paths.iter().map(|p| Image::new(p.clone(), placeholder.clone())).collect()
+    paths
+        .iter()
+        .map(|p| Image::new(p.clone(), placeholder.clone()))
+        .collect()
 }

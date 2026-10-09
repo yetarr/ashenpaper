@@ -1,12 +1,11 @@
+use std::io::{self, Read};
+use std::path::Path;
+use std::process::{Child, Command, Stdio};
+use std::sync::mpsc::{Receiver, sync_channel};
+use std::thread;
+
 use eframe::egui::{ColorImage, Context, Rect, TextureHandle, TextureOptions, pos2};
 use image::RgbaImage;
-use std::{
-    io::{self, Read},
-    path::Path,
-    process::{Child, Command, Stdio},
-    sync::mpsc::{Receiver, sync_channel},
-    thread,
-};
 
 pub const PW: usize = 320;
 pub const PH: usize = 180;
@@ -26,23 +25,31 @@ pub fn uv_cover(tile_aspect: f32) -> Rect {
     }
 }
 
-/// One-shot: first frame (1s in, falls back to 0 for short clips) as a ColorImage.
 pub fn thumbnail(path: &Path, w: u32, h: u32) -> io::Result<RgbaImage> {
     for ss in ["1", "0"] {
         let out = Command::new("ffmpeg")
             .args(["-v", "error", "-ss", ss, "-i"])
             .arg(path)
-            .args(["-frames:v", "1", "-vf", &vf(w, h), "-f", "rawvideo", "-pix_fmt", "rgba", "-"])
+            .args([
+                "-frames:v",
+                "1",
+                "-vf",
+                &vf(w, h),
+                "-f",
+                "rawvideo",
+                "-pix_fmt",
+                "rgba",
+                "-",
+            ])
             .stderr(Stdio::null())
             .output()?;
         if let Some(img) = RgbaImage::from_raw(w, h, out.stdout) {
             return Ok(img);
         }
     }
-    Err(io::Error::new(io::ErrorKind::Other, "ffmpeg produced no frame"))
+    Err(io::Error::other("ffmpeg produced no frame"))
 }
 
-/// Looping live preview. Dropping it kills ffmpeg.
 pub struct VideoPreview {
     child: Child,
     rx: Receiver<ColorImage>,

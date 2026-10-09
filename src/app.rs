@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
+use std::sync::mpsc::Receiver;
 
 use anyhow::Result;
-use eframe::egui::{self, Color32, Vec2, ColorImage, TextureOptions};
-use std::sync::mpsc::Receiver;
+use eframe::egui::{self, Color32, ColorImage, TextureOptions, Vec2};
 
 use crate::backend::hypr::HyprpaperBackend;
 use crate::backend::mpv::MpvpaperBackend;
@@ -36,7 +36,11 @@ pub struct Ashpaper {
 }
 
 impl Ashpaper {
-    pub fn new(wallpapers: Vec<PathBuf>, settings: AppSettings, ctx: &egui::Context) -> Result<Self> {
+    pub fn new(
+        wallpapers: Vec<PathBuf>,
+        settings: AppSettings,
+        ctx: &egui::Context,
+    ) -> Result<Self> {
         let placeholder = ctx.load_texture(
             "placeholder",
             ColorImage::filled([1, 1], Color32::from_gray(40)),
@@ -44,12 +48,16 @@ impl Ashpaper {
         );
         let images = ui::image::compute_images(&wallpapers, &placeholder);
 
-        // 2x the logical tile width so tiles stay sharp on HiDPI
         let w = (settings.img_dimensions.x * 2.0) as u32;
         let h = (w as f32 / settings.target_aspect) as u32;
         let thumbs_rx = ui::thumbs::spawn_all(wallpapers, (w, h), ctx.clone());
 
-        Ok(Ashpaper { wallpapers: images, preview: None, thumbs_rx, settings })
+        Ok(Ashpaper {
+            wallpapers: images,
+            preview: None,
+            thumbs_rx,
+            settings,
+        })
     }
 
     fn poll_thumbnails(&mut self, ctx: &egui::Context) {
@@ -88,7 +96,6 @@ impl Ashpaper {
                 }
             });
 
-        // no video tile hovered this frame -> drop the preview, which kills ffmpeg
         if !hovered_video {
             self.preview = None;
         }
@@ -129,20 +136,20 @@ impl Ashpaper {
                     *hovered_video = true;
                     let path = PathBuf::from(img.path_str());
 
-                    if preview.as_ref().map_or(true, |(p, _)| *p != path) {
+                    if preview.as_ref().is_none_or(|(p, _)| *p != path) {
                         *preview = VideoPreview::start(&path, ui.ctx())
                             .ok()
                             .map(|pv| (path, pv));
                     }
-                    if let Some((_, pv)) = preview {
-                        if let Some(tex) = pv.texture(ui.ctx()) {
-                            ui.painter().image(
-                                tex.id(),
-                                tile.rect,
-                                uv_cover(settings.target_aspect),
-                                Color32::WHITE,
-                            );
-                        }
+                    if let Some((_, pv)) = preview
+                        && let Some(tex) = pv.texture(ui.ctx())
+                    {
+                        ui.painter().image(
+                            tex.id(),
+                            tile.rect,
+                            uv_cover(settings.target_aspect),
+                            Color32::WHITE,
+                        );
                     }
                 }
 

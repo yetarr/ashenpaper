@@ -4,10 +4,8 @@ use std::process::Command;
 use anyhow::Result;
 use dirs;
 
-use crate::backend::{Backend, Monitor};
 use crate::backend::mpv::MpvpaperBackend;
-
-
+use crate::backend::{Backend, Monitor};
 
 pub struct HyprpaperBackend {}
 

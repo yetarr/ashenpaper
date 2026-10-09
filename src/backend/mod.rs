@@ -2,10 +2,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
-use crate::backend::{
-    hypr::HyprpaperBackend,
-    mpv::MpvpaperBackend,
-};
+use crate::backend::{hypr::HyprpaperBackend, mpv::MpvpaperBackend};
 
 pub mod hypr;
 pub mod mpv;

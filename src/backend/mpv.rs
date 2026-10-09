@@ -1,13 +1,11 @@
-use std::{
-    fs,
-    io::{BufRead, BufReader, Write},
-    os::unix::net::UnixStream,
-    path::{Path, PathBuf},
-    process::Command,
-    time::Duration,
-};
+use std::fs;
+use std::io::{BufRead, BufReader, Write};
+use std::os::unix::net::UnixStream;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::time::Duration;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 
 use crate::backend::{Backend, Monitor};
 
@@ -25,13 +23,11 @@ fn sock_path(monitor: &str) -> PathBuf {
     runtime_dir().join(format!("{SOCK_PREFIX}{monitor}.sock"))
 }
 
-/// Tell a running mpvpaper to switch files via mpv's JSON IPC.
 fn send_loadfile(mut stream: UnixStream, path: &str) -> Result<()> {
     stream.set_read_timeout(Some(Duration::from_millis(500)))?;
     let cmd = serde_json::json!({ "command": ["loadfile", path, "replace"] });
     writeln!(stream, "{cmd}")?;
 
-    // mpv may interleave event lines; the reply is the one with an "error" key
     for line in BufReader::new(stream).lines() {
         let v: serde_json::Value = serde_json::from_str(&line?)?;
         if let Some(err) = v.get("error") {
@@ -61,9 +57,7 @@ impl Backend for MpvpaperBackend {
         for mon in monitors {
             let sock = sock_path(&mon.name);
             match UnixStream::connect(&sock) {
-                // already running on this output: switch in place, no flicker
                 Ok(stream) => send_loadfile(stream, path)?,
-                // nothing listening: clear any stale socket file and start fresh
                 Err(_) => {
                     let _ = fs::remove_file(&sock);
                     spawn(&mon.name, &sock, path)?;
@@ -74,7 +68,6 @@ impl Backend for MpvpaperBackend {
     }
 
     fn stop(&self) -> Result<()> {
-        // -x matches the exact process name; -f's fork means we have no pids to track
         let _ = Command::new("pkill").args(["-x", "mpvpaper"]).status();
         if let Ok(entries) = fs::read_dir(runtime_dir()) {
             for e in entries.flatten() {

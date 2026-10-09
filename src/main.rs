@@ -1,8 +1,10 @@
+use std::path::PathBuf;
+
+use eframe::{self, egui};
+
 use anyhow::Result;
 use ashenpaper::app::{AppSettings, Ashpaper};
 use ashenpaper::utils;
-use eframe::{self, egui};
-use std::path::PathBuf;
 
 fn list_wallpapers(path: &str) -> Result<Vec<PathBuf>> {
     let mut paths = Vec::new();
