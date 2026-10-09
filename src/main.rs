@@ -1,13 +1,8 @@
 use anyhow::Result;
-use eframe;
-use eframe::egui;
+use ashenpaper::app::{AppSettings, Ashpaper};
+use ashenpaper::utils;
+use eframe::{self, egui};
 use std::path::PathBuf;
-
-use crate::renderer::{AppSettings, Ashpaper};
-
-mod hypr;
-mod renderer;
-mod ui;
 
 fn list_wallpapers(path: &str) -> Result<Vec<PathBuf>> {
     let mut paths = Vec::new();
@@ -15,7 +10,7 @@ fn list_wallpapers(path: &str) -> Result<Vec<PathBuf>> {
         let path = entry?.path();
         if let Some(ext) = path.extension() {
             let ext = ext.to_string_lossy().to_lowercase();
-            if matches!(ext.as_str(), "png" | "jpg" | "jpeg") {
+            if matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "mp4") {
                 paths.push(path);
             }
         }
@@ -28,16 +23,14 @@ fn main() -> Result<()> {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
         ..Default::default()
     };
-    let wallpapers = list_wallpapers("/home/yetar/Pictures/Wallpapers")?;
+    let wallpapers = list_wallpapers("/home/yetar/pictures/wallpapers")?;
+    let settings = AppSettings::new(200.0, 20.0, utils::get_target_aspect_ratio()?);
     eframe::run_native(
         "hyprpaper changer",
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(Ashpaper::new(
-                wallpapers,
-                AppSettings::new(200.0, 20.0, hypr::get_target_aspect_ratio()?),
-            )?))
+            Ok(Box::new(Ashpaper::new(wallpapers, settings, &cc.egui_ctx)?))
         }),
     )?;
     Ok(())
