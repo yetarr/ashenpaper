@@ -1,10 +1,11 @@
+use std::env;
 use std::path::PathBuf;
 
 use eframe::{self, egui};
 
 use anyhow::Result;
 use ashenpaper::app::{AppSettings, Ashpaper};
-use ashenpaper::utils;
+use ashenpaper::{persistance, utils};
 
 fn list_wallpapers(path: &str) -> Result<Vec<PathBuf>> {
     let mut paths = Vec::new();
@@ -21,6 +22,12 @@ fn list_wallpapers(path: &str) -> Result<Vec<PathBuf>> {
 }
 
 fn main() -> Result<()> {
+    let args: Vec<String> = env::args().collect();
+    if matches!(args[1].as_str(), "--restore" | "-r") {
+        persistance::apply_last_wallpaper()?;
+        return Ok(());
+    }
+
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
         ..Default::default()

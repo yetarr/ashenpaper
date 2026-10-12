@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::process::exit;
 use std::sync::mpsc::Receiver;
 
 use anyhow::Result;
@@ -8,7 +9,7 @@ use crate::backend::hypr::HyprpaperBackend;
 use crate::backend::mpv::MpvpaperBackend;
 use crate::backend::{BackendT, WallpaperKind};
 use crate::ui::video::{VideoPreview, uv_cover};
-use crate::{backend, ui, utils};
+use crate::{backend, persistance, ui, utils};
 
 pub struct AppSettings {
     pub img_dimensions: Vec2,
@@ -67,7 +68,7 @@ impl Ashpaper {
         }
     }
 
-    fn render_all_wallpapers(&mut self, ui: &mut egui::Ui) {
+    fn render_all_wallpapers(&mut self, ui: &mut egui::Ui) -> anyhow::Result<()> {
         let (columns, padding) = self.compute_wallpaper_grid_spacing(ui);
         let mut hovered_video = false;
 
@@ -76,7 +77,7 @@ impl Ashpaper {
             .auto_shrink([false, true])
             .show(ui, |ui| {
                 for chunk in self.wallpapers.chunks(columns) {
-                    ui.horizontal(|ui| {
+                    ui.horizontal(|ui| -> anyhow::Result<()> {
                         ui.add_space(padding.max(0.0));
                         for img in chunk {
                             let backend = match backend::kind_of(Path::new(&img.path_str())) {
@@ -90,8 +91,10 @@ impl Ashpaper {
                                 &backend,
                                 &mut self.preview,
                                 &mut hovered_video,
-                            );
+                            )?;
                         }
+
+                        Ok(())
                     });
                 }
             });
@@ -99,6 +102,8 @@ impl Ashpaper {
         if !hovered_video {
             self.preview = None;
         }
+
+        Ok(())
     }
 
     fn compute_wallpaper_grid_spacing(&self, ui: &egui::Ui) -> (usize, f32) {
@@ -122,14 +127,14 @@ impl Ashpaper {
         backend: &BackendT,
         preview: &mut Option<(PathBuf, VideoPreview)>,
         hovered_video: &mut bool,
-    ) {
+    ) -> anyhow::Result<()> {
         ui.allocate_ui_with_layout(
             Vec2::new(
                 settings.img_dimensions.x,
                 settings.img_dimensions.y + settings.btn_dimensions.y + 10.0,
             ),
             egui::Layout::top_down(egui::Align::Center),
-            |ui| {
+            |ui| -> anyhow::Result<()> {
                 let tile = ui.add(img.render_as_wallpaper(settings));
 
                 if matches!(backend, BackendT::Mpvpaper(_)) && tile.hovered() {
@@ -155,17 +160,26 @@ impl Ashpaper {
 
                 let btn = ui.add(ui::button::render_apply(settings, img.name().to_string()));
                 if btn.clicked() {
+                    let path = &img.path_str();
                     let monitors = utils::get_monitors().unwrap_or_default();
-                    ui::button::on_click(&img.path_str(), &monitors, backend);
+                    ui::button::on_click(path, &monitors, backend);
+                    persistance::persist_wallpaper(backend, path)?;
                 }
+
+                Ok(())
             },
         );
+
+        Ok(())
     }
 }
 
 impl eframe::App for Ashpaper {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.poll_thumbnails(ui.ctx());
-        self.render_all_wallpapers(ui);
+        if self.render_all_wallpapers(ui).is_err() {
+            eprintln!("Error rendering wallpapers");
+            exit(1);
+        }
     }
 }

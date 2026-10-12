@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{fmt::Display, path::Path};
 
 use serde::Deserialize;
 
@@ -34,6 +34,16 @@ impl Backend for BackendT {
             BackendT::Hyprpaper(h) => h.stop(),
             BackendT::Mpvpaper(m) => m.stop(),
             BackendT::None => Ok(()),
+        }
+    }
+}
+
+impl Display for BackendT {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Hyprpaper(_) => write!(f, "hyprpaper"),
+            Self::Mpvpaper(_) => write!(f, "mpvpaper"),
+            Self::None => write!(f, "none"),
         }
     }
 }
