@@ -23,7 +23,7 @@ fn list_wallpapers(path: &str) -> Result<Vec<PathBuf>> {
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
-    if matches!(args[1].as_str(), "--restore" | "-r") {
+    if args.len() > 1 && matches!(args[1].as_str(), "--restore" | "-r") {
         persistance::apply_last_wallpaper()?;
         return Ok(());
     }
